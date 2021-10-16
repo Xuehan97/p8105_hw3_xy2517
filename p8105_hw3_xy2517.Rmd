@@ -1,0 +1,158 @@
+---
+title: "p8105_hw3_xy2517"
+author: "Xuehan Yang"
+date: "2021/10/15"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = 1,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+# Problem 1
+
+## Data import and short description
+
+```{r}
+data("instacart")
+```
+
+Instacart is an online grocery service that allows you to shop online from local stores. The dataset represent a samplinf of products, users, and purchases. 
+
+It cantains `r nrow(instacart)` observations of `r nrow(distinct(instacart,user_id))` unique users, where each row in the dataset is a product from an order. There are `r ncol(instacart)` variables in this dataset, which include `r names(instacart)`. 
+
+Specifically,
+*  order_dow is the day of the week on which the order was placed.
+*  order_hour_of_day if the hour of the day on which the order was placed, from where we could see that people on average place order at `r round(mean(pull(instacart, order_hour_of_day)), digit = 1)` o'clock.
+*  aisle_id means the little categories of a product like "yogurt" and "fresh fruits".
+*  department_id is a bigger classification of a product like "produce" and "dairy eggs".
+
+## Exploratory data analysis
+
+**Which aisles are the most items ordered from?**
+```{r}
+aisle_df = instacart %>% 
+  group_by(aisle) %>% 
+  summarize(items_count = n()) %>% 
+  arrange(desc(items_count))
+
+head(aisle_df,3) %>% 
+  knitr::kable()
+```
+
+There are `r nrow(aisle_df)` aisles there, `r pull(aisle_df, aisle)[1]` are the most items ordered from.
+
+**Make a barplot to show top Aisles and their items ordered.**
+```{r}
+instacart %>% 
+  group_by(aisle) %>% 
+  summarize(items_count = n()) %>% 
+  filter(items_count >= 10000) %>% 
+  mutate(aisle = forcats::fct_reorder(aisle, items_count)) %>% 
+  ggplot(aes(y = aisle, x = items_count, fill = aisle)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Aisles and the number of items ordered",
+    x = "Number of items",
+    y = "Aisle name") + # Rename the labels
+  theme(legend.position = "none") +
+  scale_x_continuous(trans = "sqrt") # Making top lines shorter looks better 
+```
+
+**Table showing the top three ordered items in designated aisles**
+```{r}
+popular3 = instacart %>% 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+  group_by(aisle, product_name) %>%
+  summarize(item_count = n()) %>% 
+  filter(min_rank(desc(item_count)) <= 3) %>% 
+  arrange(desc(item_count))
+
+popular3 %>% knitr::kable()
+```
+
+**Ordered information about Pink Lady Apples and Coffee Ice Cream (2 x 7 table)**
+```{r}
+meanhour = instacart %>% 
+  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%
+  mutate(as.character(order_dow)) %>% 
+  mutate(
+    order_dow = recode(
+      order_dow,
+      "0" = "Sun",
+      "1" = "Mon",
+      "2" = "Tue",
+      "3" = "Wed",
+      "4" = "Thur",
+      "5" = "Fri",
+      "6" = "Sat")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(u_hour = round(mean(order_hour_of_day), 1)) %>% 
+  pivot_wider(
+    names_from = order_dow,
+    values_from = u_hour
+  )
+
+meanhour %>% knitr::kable()
+```
+
+# Problem 2
+
+## Do some data cleaning
+
+```{r}
+data("brfss_smart2010")
+```
+
+```{r}
+brfss = brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  rename(state = locationabbr, desc = locationdesc) %>% # rename 2 variables
+  filter(response %in% c("Excellent","Very good","Good","Fair","Poor") & topic == "Overall Health") %>% 
+  mutate(response = forcats::fct_relevel(response, c("Poor","Fair","Good","Very good","Excellent"))) # level from "Poor" to "Excellent"
+```
+
+## Exploratory data analysis
+
+**Which states were observed at 7 or more locations?**
+```{r}
+brfss %>% 
+  filter(year == 2002) %>% 
+  select(state,desc) %>% 
+  distinct() %>% 
+  group_by(state) %>% 
+  summarise(n_obs = n()) %>% 
+  filter(n_obs >= 7)
+```
+
+In 2002, 
+
+```{r}
+```
+
+
+
+
+
+
+
+
+
+
