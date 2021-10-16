@@ -133,21 +133,48 @@ brfss = brfss_smart2010 %>%
 
 **Which states were observed at 7 or more locations?**
 ```{r}
-brfss %>% 
-  filter(year == 2002) %>% 
-  select(state,desc) %>% 
-  distinct() %>% 
-  group_by(state) %>% 
+states7 = 
+  brfss %>% 
+  filter(year == 2002 | year == 2010) %>% 
+  select(state,desc,year) %>% 
+  distinct() %>% # drop the duplicate
+  group_by(state, year) %>% 
   summarise(n_obs = n()) %>% 
   filter(n_obs >= 7)
 ```
 
-In 2002, 
+In 2002, states `r pull(filter(states7, year == 2002), state)` were observed at 7 or more locations.
+In 2010, states `r pull(filter(states7, year == 2010), state)` were observed at 7 or more locations.
 
+**Spaghetti plot**
 ```{r}
+  brfss %>% 
+  filter(response == "Excellent" ) %>% 
+  group_by(year, state) %>% 
+  summarise(mean_value = mean(data_value, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_value, color = state)) +
+  geom_line() +
+  labs(
+    x  = "Year",
+    y = "Average data_value",
+    title = "Average data_value over time"
+  ) +
+  guides(color = guide_legend(nrow = 3)) #Accurately change legend into 3 rows
 ```
 
-
+**Two panel plots**
+```{r}
+brfss %>% 
+  filter(year %in% c(2006, 2010)) %>% 
+  ggplot(aes(x = data_value)) +
+  geom_density(aes(fill = response), alpha = 0.7) +
+  facet_grid(.~ year) +
+  labs(
+    x = "Data_value",
+    y = "Density",
+    title = "Distribution of data_value for 5 responses 2006 vs.2010"
+  )
+```
 
 
 
