@@ -173,7 +173,7 @@ brfss %>%
     y = "Average data_value",
     title = "Average data_value over time"
   ) +
-  guides(color = guide_legend(nrow = 3))   #Accurately change legend into 3 rows
+  guides(color = guide_legend(nrow = 3))  #Accurately change legend into 3 rows
 ```
 
 **Two panel plots**
