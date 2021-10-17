@@ -5,13 +5,14 @@ date: "2021/10/15"
 output: github_document
 ---
 
-```{r}
+**Used library and default plot setting.**
+```{r, message=FALSE}
 library(tidyverse)
 library(p8105.datasets)
 
 knitr::opts_chunk$set(
   fig.width = 6,
-  fig.asp = 1,
+  fig.asp = 0.8,
   out.width = "90%"
 )
 
@@ -39,6 +40,7 @@ Instacart is an online grocery service that allows you to shop online from local
 It cantains `r nrow(instacart)` observations of `r nrow(distinct(instacart,user_id))` unique users, where each row in the dataset is a product from an order. There are `r ncol(instacart)` variables in this dataset, which include `r names(instacart)`. 
 
 Specifically,
+
 *  order_dow is the day of the week on which the order was placed.
 *  order_hour_of_day if the hour of the day on which the order was placed, from where we could see that people on average place order at `r round(mean(pull(instacart, order_hour_of_day)), digit = 1)` o'clock.
 *  aisle_id means the little categories of a product like "yogurt" and "fresh fruits".
@@ -76,8 +78,10 @@ instacart %>%
   scale_x_continuous(trans = "sqrt") # Making top lines shorter looks better 
 ```
 
+Top three aisles are fresh vegetables, fresh fruits and packaged vegetables fruits. The differences in the number of items ordered from each aisle were big so I transferred the scale of number of items into sqrt. 
+
 **Table showing the top three ordered items in designated aisles**
-```{r}
+```{r, message=FALSE}
 popular3 = instacart %>% 
   filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
   group_by(aisle, product_name) %>%
@@ -88,8 +92,10 @@ popular3 = instacart %>%
 popular3 %>% knitr::kable()
 ```
 
+Although all of them are top three ordered items, the number of items ordered differed  greatly in different aisles.
+
 **Ordered information about Pink Lady Apples and Coffee Ice Cream (2 x 7 table)**
-```{r}
+```{r, message=FALSE}
 meanhour = instacart %>% 
   filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%
   mutate(as.character(order_dow)) %>% 
@@ -102,7 +108,8 @@ meanhour = instacart %>%
       "3" = "Wed",
       "4" = "Thur",
       "5" = "Fri",
-      "6" = "Sat")) %>% 
+      "6" = "Sat"),
+    order_dow = forcats::fct_relevel(order_dow, c("Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"))) %>% 
   group_by(product_name, order_dow) %>% 
   summarize(u_hour = round(mean(order_hour_of_day), 1)) %>% 
   pivot_wider(
@@ -113,15 +120,17 @@ meanhour = instacart %>%
 meanhour %>% knitr::kable()
 ```
 
+Coffee Ice Cream is on average ordered later than Pink Lady Apples.
+
 # Problem 2
 
 ## Do some data cleaning
 
-```{r}
+```{r,message=FALSE}
 data("brfss_smart2010")
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 brfss = brfss_smart2010 %>% 
   janitor::clean_names() %>% 
   rename(state = locationabbr, desc = locationdesc) %>% # rename 2 variables
@@ -132,7 +141,7 @@ brfss = brfss_smart2010 %>%
 ## Exploratory data analysis
 
 **Which states were observed at 7 or more locations?**
-```{r}
+```{r,message=FALSE}
 states7 = 
   brfss %>% 
   filter(year == 2002 | year == 2010) %>% 
@@ -147,7 +156,7 @@ In 2002, states `r pull(filter(states7, year == 2002), state)` were observed at 
 In 2010, states `r pull(filter(states7, year == 2010), state)` were observed at 7 or more locations.
 
 **Spaghetti plot**
-```{r}
+```{r, message=FALSE}
   brfss %>% 
   filter(response == "Excellent" ) %>% 
   group_by(year, state) %>% 
@@ -163,7 +172,7 @@ In 2010, states `r pull(filter(states7, year == 2010), state)` were observed at 
 ```
 
 **Two panel plots**
-```{r}
+```{r,message=FALSE,warning=FALSE}
 brfss %>% 
   filter(year %in% c(2006, 2010)) %>% 
   ggplot(aes(x = data_value)) +
@@ -176,8 +185,102 @@ brfss %>%
   )
 ```
 
+# Problem 3
 
+## Load, tidy and wrangle data.
+```{r,message=FALSE}
+accel_df = read_csv("./data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    day = forcats::fct_relevel(day, c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")), #encode day with reasonable classes
+    is_weekend = case_when(
+      day %in% c("Saturday","Sunday") ~ "weekend",
+      day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday") ~ "weekday"
+    )) %>% # add new variable "is_weekend"
+  relocate(week, day_id, day, is_weekend, everything())
+```
 
+This dataset uses five weeks of accelerometer data collected on a 63 year-old male with BMI 25 who was diagnosed with congestive heart failure. Each row represents one day and each activity_* represents the activity acounts for that minute. There are `r ncol(accel_df)` variables including 1440 activity counts in each minute of a day and four week and day variables. The number of  observations were `r nrow(accel_df)`.
+
+## Aggregate accross minutes to create a total activity variable for each day
+```{r, message=FALSE}
+accel_df %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    values_to = "activity_num"
+  ) %>% 
+  group_by(week,day) %>% 
+  summarise(total_activity = round(sum(activity_num),0)) %>% 
+  pivot_wider(
+    names_from = day,
+    values_from = total_activity
+  ) %>% 
+  knitr::kable()
+```
+
+*  Trend 1: In the first two weeks, the activity counts in weekdays were increasing.
+*  Trend 2: The fluctuation of activity counts of a day seemed less during weekdays.
+However, these two trends are not apparent and could be not generalized to whole observation period.
+
+## Inspection activity over the course of the day
+```{r}
+accel_df %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    names_prefix = "activity_",
+    values_to = "activity_num"
+  ) %>% 
+  mutate(
+    minute = as.double(minute),
+    hour = ceiling(minute/60)) %>% # if I want to change unit from minute to hour
+  ggplot(aes(x = minute, y = activity_num, group = day_id)) + # draw lines according to each day.
+  geom_line(aes(color = day)) + # use color to indicate day of the week
+  scale_x_continuous(
+    breaks = c(0, 360, 720, 1080, 1440),
+    labels = c("0:00AM", "6:00AM", "12:00PM", "6:00PM", "11:59PM")
+  ) +
+  labs(
+    x = "Time of a day",
+    y = "The number of activities",
+    title = "24-hour activity time courses for each day"
+  )
+```
+
+**Conclusions:**
+
+*  From the minutes aspect, this patient conducted less activities during 10:00PM to 6:00AM when he was asleep and more activities during waking hours. Besides, there were an increasing trend in the number of activities during the day. The highly active periods fell around 7:00AM, 12:00PM, 5:00PM and 8:00PM.
+*  From the day aspect, the patient was more active around 12:00PM at the beginning of a week from Sunday to Tuesday which showed by blue lines in the middle and more active around 9:00PM at the end of a week that was showed by green lines on the right.
+
+**Turn unit from minute into hour**
+```{r}
+accel_df %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    names_prefix = "activity_",
+    values_to = "activity_num"
+  ) %>% 
+  mutate(
+    minute = as.double(minute),
+    hour = ceiling(minute/60)) %>% # change unit from minute to hour
+  group_by(day_id,day,hour) %>% 
+  summarise(total_act = round(mean(activity_num),0)) %>% 
+  ggplot(aes(x = hour, y = total_act, group = day_id)) + # draw lines according to each day
+  geom_line(aes(color = day)) + # use color to indicate day of the week
+  scale_x_continuous(
+    breaks = c(1, 6, 12, 18, 24),
+    labels = c("1", "6", "12", "18", "24")
+  ) +
+  labs(
+    x = "Hour of a day",
+    y = "The number of activities",
+    title = "24-hour activity time courses for each day"
+  )
+```
+
+This can make the line more clear. Conclusions are the same as above.
 
 
 
