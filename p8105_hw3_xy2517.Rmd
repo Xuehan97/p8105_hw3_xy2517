@@ -35,6 +35,8 @@ scale_fill_discrete = scale_fill_viridis_d
 data("instacart")
 ```
 
+`r instacart %>% head(1) %>% knitr::kable()`
+
 Instacart is an online grocery service that allows you to shop online from local stores. The dataset represent a samplinf of products, users, and purchases. 
 
 It cantains `r nrow(instacart)` observations of `r nrow(distinct(instacart,user_id))` unique users, where each row in the dataset is a product from an order. There are `r ncol(instacart)` variables in this dataset, which include `r names(instacart)`. 
@@ -75,7 +77,10 @@ instacart %>%
     x = "Number of items",
     y = "Aisle name") + # Rename the labels
   theme(legend.position = "none") +
-  scale_x_continuous(trans = "sqrt") # Making top lines shorter looks better 
+  scale_x_continuous(
+    trans = "sqrt",
+    breaks = c(10000, 20000, 40000, 80000, 160000),
+    labels = c("10000","20000","40000","80000", "160000")) # Making top lines shorter looks better 
 ```
 
 Top three aisles are fresh vegetables, fresh fruits and packaged vegetables fruits. The differences in the number of items ordered from each aisle were big so I transferred the scale of number of items into sqrt. 
@@ -157,7 +162,7 @@ In 2010, states `r pull(filter(states7, year == 2010), state)` were observed at 
 
 **Spaghetti plot**
 ```{r, message=FALSE}
-  brfss %>% 
+brfss %>% 
   filter(response == "Excellent" ) %>% 
   group_by(year, state) %>% 
   summarise(mean_value = mean(data_value, na.rm = TRUE)) %>% 
@@ -168,7 +173,7 @@ In 2010, states `r pull(filter(states7, year == 2010), state)` were observed at 
     y = "Average data_value",
     title = "Average data_value over time"
   ) +
-  guides(color = guide_legend(nrow = 3)) #Accurately change legend into 3 rows
+  guides(color = guide_legend(nrow = 3))   #Accurately change legend into 3 rows
 ```
 
 **Two panel plots**
