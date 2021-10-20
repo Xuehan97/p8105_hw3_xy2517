@@ -179,7 +179,7 @@ brfss %>%
 **Two panel plots**
 ```{r,message=FALSE,warning=FALSE}
 brfss %>% 
-  filter(year %in% c(2006, 2010)) %>% 
+  filter(year %in% c(2006, 2010), state == "NY") %>% 
   ggplot(aes(x = data_value)) +
   geom_density(aes(fill = response), alpha = 0.7) +
   facet_grid(.~ year) +
